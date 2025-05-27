@@ -1,0 +1,28 @@
+## Ignore Visual Studio files
+.vs/
+*.user
+*.suo
+
+## Ignore build outputs
+bin/
+obj/
+
+## Ignore local database files
+*.mdf
+*.ldf
+*.db
+
+## Ignore log files
+*.log
+
+## Ignore temporary files
+*.tmp
+*.bak
+*.cache
+
+## Ignore Rider and VS Code settings (optional)
+.idea/
+.vscode/
+
+## Ignore migrations snapshot files (optional)
+Migrations/ModelSnapshot.cs
