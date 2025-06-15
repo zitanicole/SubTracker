@@ -15,7 +15,7 @@
             <input type="hidden" asp-for="AutopaymentId" />
             <div class="form-group">
                 <label asp-for="AccountId" class="control-label"></label>
-                <input asp-for="AccountId" class="form-control" />
+                <input asp-for="AccountId" class="form-control" asp-items="ViewBag.AccountId" />
                 <span asp-validation-for="AccountId" class="text-danger"></span>
             </div>
             <div class="form-group">

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SubTracker.capstone_Kellogg.Data;
-using SubTracker.capstone_Kellogg.Models;
+using SubTracker.capstone_Kellogg.Models;   
 
 namespace SubTracker.capstone_Kellogg.Controllers
 {
@@ -44,7 +44,6 @@ namespace SubTracker.capstone_Kellogg.Controllers
             return View(autopayment);
         }
 
-        // GET: Autopayments/Create
         // GET: Autopayments/Create
         public IActionResult Create()
         {
