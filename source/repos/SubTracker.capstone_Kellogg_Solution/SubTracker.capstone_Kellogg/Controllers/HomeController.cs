@@ -76,11 +76,12 @@ public class HomeController : Controller
 
         decimal balance = latestTransaction.Amount;
         DateTime balanceStartDate = latestTransaction.Date;
+        DateTime startDateOnly = balanceStartDate.Date;
 
         var autopayments = await _context.Autopayments
             .Where(a => a.AccountId == accountId &&
-                        a.StartDate > balanceStartDate &&
-                        a.StartDate <= DateTime.Today)
+                        a.StartDate.Date >= balanceStartDate.Date &&
+                        a.StartDate.Date <= DateTime.Today)
             .ToListAsync();
 
         foreach (var auto in autopayments)
@@ -91,8 +92,29 @@ public class HomeController : Controller
         var recentTransactions = await _context.Transactions
             .Where(t => t.AccountId == accountId)
             .OrderByDescending(t => t.Date)
-            .Take(5)
+            .Select(t => new Transaction
+            {
+                Date = t.Date,
+                Type = t.Type,
+                Amount = t.Amount
+            })
             .ToListAsync();
+
+        // Add autopayments as "virtual transactions"
+        // short term solution for visual demo
+        var autoTransactions = autopayments.Select(a => new Transaction
+        {
+            Date = a.StartDate,
+            Type = "Autopayment",
+            Amount = -a.Amount
+        });
+
+        recentTransactions.AddRange(autoTransactions);
+        recentTransactions = recentTransactions
+            .OrderByDescending(t => t.Date)
+            .Take(5)
+            .ToList();
+
 
         var model = new ViewBalanceViewModel
         {

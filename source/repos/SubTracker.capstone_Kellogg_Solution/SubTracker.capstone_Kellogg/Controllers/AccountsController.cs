@@ -57,16 +57,6 @@ namespace SubTracker.capstone_Kellogg.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("AccountId,AccountName,Balance")] Account account)
         {
-            // temp debug
-            foreach (var entry in ModelState)
-            {
-                foreach (var error in entry.Value.Errors)
-                {
-                    Console.WriteLine($"Field: {entry.Key}, Error: {error.ErrorMessage}");
-                }
-            }
-                // debug ^^
-
             if (ModelState.IsValid)
             {
                 _context.Add(account);
