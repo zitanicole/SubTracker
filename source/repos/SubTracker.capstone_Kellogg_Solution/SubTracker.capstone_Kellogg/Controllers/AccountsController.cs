@@ -34,6 +34,7 @@ namespace SubTracker.capstone_Kellogg.Controllers
             }
 
             var account = await _context.Accounts
+                 .Include(a => a.Autopayments)
                 .FirstOrDefaultAsync(m => m.AccountId == id);
             if (account == null)
             {
@@ -56,10 +57,38 @@ namespace SubTracker.capstone_Kellogg.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("AccountId,AccountName,Balance")] Account account)
         {
+            // temp debug
+            foreach (var entry in ModelState)
+            {
+                foreach (var error in entry.Value.Errors)
+                {
+                    Console.WriteLine($"Field: {entry.Key}, Error: {error.ErrorMessage}");
+                }
+            }
+                // debug ^^
+
             if (ModelState.IsValid)
             {
                 _context.Add(account);
+
+                // save account
                 await _context.SaveChangesAsync();
+
+                // create a starting transaction
+                var initialDeposit = new Transaction
+                {
+                    AccountId = account.AccountId,
+                    Amount = account.Balance,
+                    Type = "Deposit",
+                    Date = DateTime.Now,
+                    Description = "Initial deposit"
+                };
+
+                _context.Transactions.Add(initialDeposit);
+
+                // save transaction
+                await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
             return View(account);

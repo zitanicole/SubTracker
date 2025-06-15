@@ -2,6 +2,9 @@ using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using SubTracker.capstone_Kellogg.Models;
 using SubTracker.capstone_Kellogg.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Rendering;
+
 
 namespace SubTracker.capstone_Kellogg.Controllers;
 
@@ -26,19 +29,77 @@ public class HomeController : Controller
         return View();
     }
 
-    public IActionResult ViewBalance()
+    public async Task<IActionResult> ViewBalance(int? accountId)
     {
-        var account = _context.Accounts.FirstOrDefault();
+        var accounts = await _context.Accounts
+            .Select(a => new { a.AccountId, a.AccountName })
+            .ToListAsync();
 
-        var transactions = _context.Transactions
+        var selectList = new SelectList(accounts, "AccountId", "AccountName", accountId);
+
+        if (accountId == null)
+        {
+            if (accounts.Any())
+            {
+                // Automatically use the first account
+                accountId = accounts.First().AccountId;
+            }
+            else
+            {
+                // No accounts exist — return empty balance model
+                return View(new ViewBalanceViewModel
+                {
+                    AccountId = 0,
+                    CurrentBalance = 0,
+                    RecentTransactions = new List<Transaction>(),
+                    Accounts = selectList
+                });
+            }
+        }
+
+
+        var latestTransaction = await _context.Transactions
+            .Where(t => t.AccountId == accountId)
+            .OrderByDescending(t => t.Date)
+            .FirstOrDefaultAsync();
+
+        if (latestTransaction == null)
+        {
+            return View(new ViewBalanceViewModel
+            {
+                AccountId = accountId.Value,
+                CurrentBalance = 0,
+                RecentTransactions = new List<Transaction>(),
+                Accounts = selectList
+            });
+        }
+
+        decimal balance = latestTransaction.Amount;
+        DateTime balanceStartDate = latestTransaction.Date;
+
+        var autopayments = await _context.Autopayments
+            .Where(a => a.AccountId == accountId &&
+                        a.StartDate > balanceStartDate &&
+                        a.StartDate <= DateTime.Today)
+            .ToListAsync();
+
+        foreach (var auto in autopayments)
+        {
+            balance -= auto.Amount;
+        }
+
+        var recentTransactions = await _context.Transactions
+            .Where(t => t.AccountId == accountId)
             .OrderByDescending(t => t.Date)
             .Take(5)
-            .ToList();
+            .ToListAsync();
 
         var model = new ViewBalanceViewModel
         {
-            CurrentBalance = account?.Balance ?? 0,
-            RecentTransactions = transactions
+            AccountId = accountId.Value,
+            CurrentBalance = balance,
+            RecentTransactions = recentTransactions,
+            Accounts = selectList
         };
 
         return View(model);

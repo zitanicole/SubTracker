@@ -4,6 +4,15 @@
     ViewData["Title"] = "View Balance";
 }
 
+<form asp-action="ViewBalance" method="get">
+    <div class="form-group">
+        <label for="accountId">Select Account:</label>
+        <select asp-for="AccountId" asp-items="Model.Accounts" class="form-control"></select>
+    </div>
+    <button type="submit" class="btn btn-primary">View Balance</button>
+</form>
+
+
 <h2>Account Balance</h2>
 <p><strong>Current Balance:</strong> @Model.CurrentBalance.ToString("C")</p>
 

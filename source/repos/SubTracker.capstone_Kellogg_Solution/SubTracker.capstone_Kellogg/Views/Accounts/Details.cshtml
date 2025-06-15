@@ -10,21 +10,66 @@
     <h4>Account</h4>
     <hr />
     <dl class="row">
-        <dt class = "col-sm-2">
+        <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.AccountName)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class="col-sm-10">
             @Html.DisplayFor(model => model.AccountName)
         </dd>
-        <dt class = "col-sm-2">
+        <dt class="col-sm-2">
             @Html.DisplayNameFor(model => model.Balance)
         </dt>
-        <dd class = "col-sm-10">
+        <dd class="col-sm-10">
             @Html.DisplayFor(model => model.Balance)
         </dd>
     </dl>
 </div>
+
+<hr />
+
+<h4>Autopayments</h4>
+@if (Model.Autopayments != null && Model.Autopayments.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Amount</th>
+                <th>Frequency</th>
+                <th>Start Date</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var autopayment in Model.Autopayments)
+            {
+                <tr>
+                    <td>@autopayment.Name</td>
+                    <td>@autopayment.Amount.ToString("C")</td>
+                    <td>@autopayment.Frequency</td>
+                    <td>@autopayment.StartDate.ToShortDateString()</td>
+                    <td>
+                        <a asp-controller="Autopayments" asp-action="Edit" asp-route-id="@autopayment.AutopaymentId">Edit</a> |
+                        <a asp-controller="Autopayments" asp-action="Delete" asp-route-id="@autopayment.AutopaymentId">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No autopayments found for this account.</p>
+}
+
+<p>
+    <a asp-controller="Autopayments" asp-action="Create" asp-route-accountId="@Model.AccountId">Add Autopayment</a>
+</p>
+
+<hr />
+
 <div>
     <a asp-action="Edit" asp-route-id="@Model?.AccountId">Edit</a> |
     <a asp-action="Index">Back to List</a>
 </div>
+
