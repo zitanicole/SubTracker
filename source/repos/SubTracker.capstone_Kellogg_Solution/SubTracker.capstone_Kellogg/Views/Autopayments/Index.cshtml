@@ -22,9 +22,8 @@
             <th>
                 @Html.DisplayNameFor(model => model.StartDate)
             </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Frequency)
-            </th>
+            <th>Frequency</th>
+
             <th></th>
         </tr>
     </thead>
@@ -44,7 +43,8 @@
                 @Html.DisplayFor(modelItem => item.StartDate)
             </td>
             <td>
-                @Html.DisplayFor(modelItem => item.Frequency)
+                    @($"{item.FrequencyInterval} {item.FrequencyUnit}")
+
             </td>
             <td>
                 <a asp-action="Edit" asp-route-id="@item.AutopaymentId">Edit</a> |

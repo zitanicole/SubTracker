@@ -17,7 +17,12 @@ namespace SubTracker.capstone_Kellogg.Models
         [DataType(DataType.Date)]
         public DateTime StartDate { get; set; }
         [Required]
-        public string Frequency { get; set; } // Daily, Weekly, Monthly, Yearly
+        [Range(1, 365, ErrorMessage = "Frequency interval must be at least 1.")]
+        public int FrequencyInterval { get; set; } // e.g., 12
+
+        [Required]
+        public string FrequencyUnit { get; set; } // "Day", "Week", "Month", "Year"
+
         [ForeignKey("AccountId")]
         public virtual Account? Account { get; set; }
 

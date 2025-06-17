@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -27,6 +28,7 @@ namespace SubTracker.capstone_Kellogg.Models
         [Required]
         public string Description { get; set; }
 
-        public virtual Account Account { get; set; }
+        [BindNever]
+        public virtual Account? Account { get; set; }
     }
 }

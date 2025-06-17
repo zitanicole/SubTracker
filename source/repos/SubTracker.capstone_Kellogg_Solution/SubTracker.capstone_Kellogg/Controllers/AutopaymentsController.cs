@@ -1,22 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SubTracker.capstone_Kellogg.Data;
-using SubTracker.capstone_Kellogg.Models;   
+using SubTracker.capstone_Kellogg.Models;
+using SubTracker.capstone_Kellogg.Services;
+
 
 namespace SubTracker.capstone_Kellogg.Controllers
 {
     public class AutopaymentsController : Controller
     {
         private readonly ProjectDbContext _context;
+        private readonly AutopaymentProcessor _processor;
 
-        public AutopaymentsController(ProjectDbContext context)
+        public AutopaymentsController(ProjectDbContext context, AutopaymentProcessor processor)
         {
             _context = context;
+            _processor = processor;
         }
 
         // GET: Autopayments
@@ -45,11 +50,22 @@ namespace SubTracker.capstone_Kellogg.Controllers
         }
 
         // GET: Autopayments/Create
-        public IActionResult Create()
+        public IActionResult Create(int? accountId)
         {
-            ViewData["AccountId"] = new SelectList(_context.Accounts, "AccountId", "AccountName");
-            return View();
+            if (accountId == null || !_context.Accounts.Any(a => a.AccountId == accountId))
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            var autopayment = new Autopayment
+            {
+                AccountId = accountId.Value,
+                StartDate = DateTime.Today
+            };
+
+            return View(autopayment);
         }
+
 
 
         // POST: Autopayments/Create
@@ -57,17 +73,18 @@ namespace SubTracker.capstone_Kellogg.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("AutopaymentId,AccountId,Name,Amount,StartDate,Frequency")] Autopayment autopayment)
+        public async Task<IActionResult> Create([Bind("AutopaymentId,AccountId,Name,Amount,StartDate,FrequencyInterval,FrequencyUnit")] Autopayment autopayment)
         {
             if (ModelState.IsValid)
             {
                 _context.Add(autopayment);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+
+                return RedirectToAction("Index", "Home", new { accountId = autopayment.AccountId });
             }
-            ViewData["AccountId"] = new SelectList(_context.Accounts, "AccountId", "AccountName", autopayment.AccountId);
             return View(autopayment);
         }
+
 
         // GET: Autopayments/Edit/5
         // GET: Autopayments/Edit/5
@@ -94,7 +111,7 @@ namespace SubTracker.capstone_Kellogg.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("AutopaymentId,AccountId,Name,Amount,StartDate,Frequency")] Autopayment autopayment)
+        public async Task<IActionResult> Edit(int id, [Bind("AutopaymentId,AccountId,Name,Amount,StartDate,FrequencyInterval, FrequencyUnit")] Autopayment autopayment)
         {
             if (id != autopayment.AutopaymentId)
             {
@@ -161,5 +178,14 @@ namespace SubTracker.capstone_Kellogg.Controllers
         {
             return _context.Autopayments.Any(e => e.AutopaymentId == id);
         }
+
+        [HttpPost]
+        public async Task<IActionResult> RunAutopaymentProcessor()
+        {
+            var count = await _processor.RunAsync();
+            TempData["Message"] = $"{count} autopayments processed.";
+            return RedirectToAction("Index", "Accounts");
+        }
+
     }
 }

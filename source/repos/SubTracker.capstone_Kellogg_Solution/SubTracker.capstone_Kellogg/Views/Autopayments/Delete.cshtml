@@ -35,12 +35,13 @@
         <dd class = "col-sm-10">
             @Html.DisplayFor(model => model.StartDate)
         </dd>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Frequency)
+        <dt class="col-sm-2">
+            Frequency
         </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Frequency)
+        <dd class="col-sm-10">
+            @(Model.FrequencyInterval + " " + Model.FrequencyUnit)
         </dd>
+
     </dl>
     
     <form asp-action="Delete">

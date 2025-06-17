@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SubTracker.capstone_Kellogg.Data;
+using SubTracker.capstone_Kellogg.Services;
 
 namespace SubTracker.capstone_Kellogg
 {
@@ -15,6 +16,9 @@ namespace SubTracker.capstone_Kellogg
             // Register ProjectDbContext with connection string
             builder.Services.AddDbContext<ProjectDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            // register autopayment processor service
+            builder.Services.AddScoped<AutopaymentProcessor>();
 
             var app = builder.Build();
 

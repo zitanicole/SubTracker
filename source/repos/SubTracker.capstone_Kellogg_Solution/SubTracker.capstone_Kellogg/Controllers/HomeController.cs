@@ -4,133 +4,102 @@ using SubTracker.capstone_Kellogg.Models;
 using SubTracker.capstone_Kellogg.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using SubTracker.capstone_Kellogg.ViewModels;
+using SubTracker.capstone_Kellogg.Services;
 
 
-namespace SubTracker.capstone_Kellogg.Controllers;
-
-public class HomeController : Controller
+namespace SubTracker.capstone_Kellogg.Controllers
 {
-    private readonly ILogger<HomeController> _logger;
-    private readonly ProjectDbContext _context;
-
-    public HomeController(ILogger<HomeController> logger, ProjectDbContext context)
+    public class HomeController : Controller
     {
-        _logger = logger;
-        _context = context; 
-    }
+        private readonly ILogger<HomeController> _logger;
+        private readonly ProjectDbContext _context;
+        private readonly AutopaymentProcessor _autopaymentProcessor;
 
-    public IActionResult Index()
-    {
-        return View();
-    }
-
-    public IActionResult Privacy()
-    {
-        return View();
-    }
-
-    public async Task<IActionResult> ViewBalance(int? accountId)
-    {
-        var accounts = await _context.Accounts
-            .Select(a => new { a.AccountId, a.AccountName })
-            .ToListAsync();
-
-        var selectList = new SelectList(accounts, "AccountId", "AccountName", accountId);
-
-        if (accountId == null)
+        public HomeController(ILogger<HomeController> logger, ProjectDbContext context, AutopaymentProcessor autopaymentProcessor)
         {
-            if (accounts.Any())
-            {
-                // Automatically use the first account
-                accountId = accounts.First().AccountId;
-            }
-            else
-            {
-                // No accounts exist — return empty balance model
-                return View(new ViewBalanceViewModel
-                {
-                    AccountId = 0,
-                    CurrentBalance = 0,
-                    RecentTransactions = new List<Transaction>(),
-                    Accounts = selectList
-                });
-            }
+            _logger = logger;
+            _context = context;
+            _autopaymentProcessor = autopaymentProcessor;
         }
 
-
-        var latestTransaction = await _context.Transactions
-            .Where(t => t.AccountId == accountId)
-            .OrderByDescending(t => t.Date)
-            .FirstOrDefaultAsync();
-
-        if (latestTransaction == null)
+        public async Task<IActionResult> Index(int? accountId)
         {
-            return View(new ViewBalanceViewModel
+            var model = new HomeViewModel
+            {
+                Accounts = await _context.Accounts.ToListAsync(),
+                Transactions = new List<Transaction>()
+            };
+
+            if (accountId != null)
+            {
+                await _autopaymentProcessor.RunAsync();
+                model.SelectedAccount = await _context.Accounts.FindAsync(accountId);
+                model.Transactions = await _context.Transactions
+                    .Where(t => t.AccountId == accountId)
+                    .OrderByDescending(t => t.Date)
+                    .ToListAsync();
+            }
+
+            return View(model);
+        }
+
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        public async Task<IActionResult> ViewBalance(int? accountId)
+        {
+            var accounts = await _context.Accounts
+                .Select(a => new { a.AccountId, a.AccountName })
+                .ToListAsync();
+
+            var selectList = new SelectList(accounts, "AccountId", "AccountName", accountId);
+
+            if (accountId == null)
+            {
+                if (accounts.Any())
+                {
+                    accountId = accounts.First().AccountId;
+                }
+                else
+                {
+                    return View(new ViewBalanceViewModel
+                    {
+                        AccountId = 0,
+                        CurrentBalance = 0,
+                        RecentTransactions = new List<Transaction>(),
+                        Accounts = selectList
+                    });
+                }
+            }
+
+            decimal balance = await _context.Transactions
+                .Where(t => t.AccountId == accountId)
+                .SumAsync(t => t.Type == "Deposit" ? t.Amount : t.Amount * -1);
+
+            var recentTransactions = await _context.Transactions
+                .Where(t => t.AccountId == accountId)
+                .OrderByDescending(t => t.Date)
+                .Take(5)
+                .ToListAsync();
+
+            var model = new ViewBalanceViewModel
             {
                 AccountId = accountId.Value,
-                CurrentBalance = 0,
-                RecentTransactions = new List<Transaction>(),
+                CurrentBalance = balance,
+                RecentTransactions = recentTransactions,
                 Accounts = selectList
-            });
+            };
+
+            return View(model);
         }
 
-        decimal balance = latestTransaction.Amount;
-        DateTime balanceStartDate = latestTransaction.Date;
-        DateTime startDateOnly = balanceStartDate.Date;
-
-        var autopayments = await _context.Autopayments
-            .Where(a => a.AccountId == accountId &&
-                        a.StartDate.Date >= balanceStartDate.Date &&
-                        a.StartDate.Date <= DateTime.Today)
-            .ToListAsync();
-
-        foreach (var auto in autopayments)
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
         {
-            balance -= auto.Amount;
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
-
-        var recentTransactions = await _context.Transactions
-            .Where(t => t.AccountId == accountId)
-            .OrderByDescending(t => t.Date)
-            .Select(t => new Transaction
-            {
-                Date = t.Date,
-                Type = t.Type,
-                Amount = t.Amount
-            })
-            .ToListAsync();
-
-        // Add autopayments as "virtual transactions"
-        // short term solution for visual demo
-        var autoTransactions = autopayments.Select(a => new Transaction
-        {
-            Date = a.StartDate,
-            Type = "Autopayment",
-            Amount = -a.Amount
-        });
-
-        recentTransactions.AddRange(autoTransactions);
-        recentTransactions = recentTransactions
-            .OrderByDescending(t => t.Date)
-            .Take(5)
-            .ToList();
-
-
-        var model = new ViewBalanceViewModel
-        {
-            AccountId = accountId.Value,
-            CurrentBalance = balance,
-            RecentTransactions = recentTransactions,
-            Accounts = selectList
-        };
-
-        return View(model);
-    }
-
-
-    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
-    {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 }

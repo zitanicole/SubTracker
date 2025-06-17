@@ -45,29 +45,46 @@ namespace SubTracker.capstone_Kellogg.Controllers
             return View(transaction);
         }
 
+
         // GET: Transactions/Create
-        public IActionResult Create()
+        public IActionResult Create(int? accountId)
         {
-            ViewData["AccountId"] = new SelectList(_context.Accounts, "AccountId", "AccountId");
-            return View();
+            if (accountId == null || !_context.Accounts.Any(a => a.AccountId == accountId))
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            var transaction = new Transaction
+            {
+                AccountId = accountId.Value,
+                Date = DateTime.Today
+            };
+
+            return View(transaction);
         }
+
+
 
         // POST: Transactions/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("TransactionId,AccountId,Date,Amount,Description")] Transaction transaction)
+        public async Task<IActionResult> Create([Bind("TransactionId,AccountId,Date,Amount,Description,Type")] Transaction transaction)
         {
             if (ModelState.IsValid)
             {
                 _context.Add(transaction);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+
+                // Redirect back to the selected account's statement
+                return RedirectToAction("Index", "Home", new { accountId = transaction.AccountId });
             }
-            ViewData["AccountId"] = new SelectList(_context.Accounts, "AccountId", "AccountId", transaction.AccountId);
+
+            // If model is invalid, stay on the form with validation messages
             return View(transaction);
         }
+
 
         // GET: Transactions/Edit/5
         public async Task<IActionResult> Edit(int? id)

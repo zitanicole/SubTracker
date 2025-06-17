@@ -46,7 +46,7 @@
                 <tr>
                     <td>@autopayment.Name</td>
                     <td>@autopayment.Amount.ToString("C")</td>
-                    <td>@autopayment.Frequency</td>
+                    <td>@($"{autopayment.FrequencyInterval} {autopayment.FrequencyUnit}")</td>
                     <td>@autopayment.StartDate.ToShortDateString()</td>
                     <td>
                         <a asp-controller="Autopayments" asp-action="Edit" asp-route-id="@autopayment.AutopaymentId">Edit</a> |
